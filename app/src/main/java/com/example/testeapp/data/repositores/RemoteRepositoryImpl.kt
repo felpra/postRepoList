@@ -10,28 +10,20 @@ import javax.inject.Inject
 class RemoteRepositoryImpl @Inject constructor(private val retrofit: Retrofit): RemoteRepository {
     val postService = retrofit.create(XApi::class.java)
 
-    override suspend fun fetchPostList(): Result<List<Post>> {
+    override suspend fun fetchPostList(page: Int): Result<Repositories> {
         return getResponse(
             request = {
-                postService.getPostsList()
+                postService.getRepositoriesPost("language:kotlin", "star", page, 9)
             },
             defaultErrorMessage = "Error fetching post List")
     }
 
-    override suspend fun fetchCommentList(postId: Int): Result<List<Comments>> {
+    override suspend fun fetchAuthorInfo(userId: String): Result<User> {
         return getResponse(
             request = {
-                postService.getCommentsForPost(postId)
+                postService.getUser(userId)
             },
-            defaultErrorMessage = "Error fetching post List")
-    }
-
-    override suspend fun fetchAuthorInfo(userId: Int): Result<User> {
-        return getResponse(
-            request = {
-                postService.getUserById(userId)
-            },
-            defaultErrorMessage = "Error fetching post List")
+            defaultErrorMessage = "Error fetching user info")
     }
 
 

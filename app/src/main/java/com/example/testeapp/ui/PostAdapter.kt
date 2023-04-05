@@ -9,17 +9,22 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.testeapp.R
 import com.example.testeapp.databinding.ItemPostBinding
 import com.example.testeapp.model.Post
+import com.example.testeapp.model.PostWithUser
 import java.io.Serializable
 
-class PostAdapter(private val onPostItemClickListener: OnPostItemClickListener) : ListAdapter<Post, PostAdapter.PostViewHolder>(PostDiffCallback()) {
+class PostAdapter(private val onPostItemClickListener: OnPostItemClickListener) : ListAdapter<PostWithUser, PostAdapter.PostViewHolder>(PostDiffCallback()) {
 
     inner class PostViewHolder(val binding: ItemPostBinding) : RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(post: Post) {
-            binding.titleTextView.text = post.title
+        fun bind(post: PostWithUser) {
+            binding.titleTextView.text = post.full_name
+            binding.user.text = "Author: " + post.owner.login
+            binding.forks.text = "Forks: " + post.forks
             binding.favoriteButton.setImageResource(if (post.isFavorite) R.drawable.filled_star else R.drawable.star_outlined)
 
         }
@@ -49,19 +54,19 @@ class PostAdapter(private val onPostItemClickListener: OnPostItemClickListener) 
             true
         }
 
-        holder.itemView.setOnClickListener {
-            val intent = Intent(holder.itemView.context, DetailsActivity::class.java)
-            intent.putExtra("post", item as Parcelable)
-            holder.itemView.context.startActivity(intent)
-        }
+        Glide.with(holder.itemView.context)
+            .load(item.owner.avatar_url)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .into(holder.binding.userImage)
+
     }
 
-    class PostDiffCallback : DiffUtil.ItemCallback<Post>() {
-        override fun areItemsTheSame(oldItem: Post, newItem: Post): Boolean {
+    class PostDiffCallback : DiffUtil.ItemCallback<PostWithUser>() {
+        override fun areItemsTheSame(oldItem: PostWithUser, newItem: PostWithUser): Boolean {
             return oldItem.id == newItem.id
         }
 
-        override fun areContentsTheSame(oldItem: Post, newItem: Post): Boolean {
+        override fun areContentsTheSame(oldItem: PostWithUser, newItem: PostWithUser): Boolean {
             return oldItem == newItem
         }
     }
@@ -69,5 +74,5 @@ class PostAdapter(private val onPostItemClickListener: OnPostItemClickListener) 
 }
 
 interface OnPostItemClickListener {
-    fun onFavoriteClicked(post: Post)
+    fun onFavoriteClicked(post: PostWithUser)
 }

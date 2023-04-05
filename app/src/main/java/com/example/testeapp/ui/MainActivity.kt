@@ -5,21 +5,25 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.testeapp.R
 import com.example.testeapp.common.BaseActivity
 import com.example.testeapp.databinding.ActivityMainBinding
 import com.example.testeapp.model.Post
+import com.example.testeapp.model.PostWithUser
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>(ActivityMainBinding::inflate) {
+class MainActivity :
+    BaseActivity<ActivityMainBinding, MainViewModel>(ActivityMainBinding::inflate) {
 
     val adapterPost = PostAdapter(object : OnPostItemClickListener {
-        override fun onFavoriteClicked(post: Post) {
+        override fun onFavoriteClicked(post: PostWithUser) {
             viewModel.update(post)
         }
     })
@@ -32,7 +36,7 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>(ActivityMa
                 .distinctUntilChanged()
                 .collectLatest {
                     it.postList?.let {
-                          adapterPost.submitList(it)
+                        adapterPost.submitList((adapterPost.currentList + it).distinct())
                         binding.recyclerview.visibility = View.VISIBLE
                         binding.loading.visibility = View.GONE
                     }
@@ -43,9 +47,8 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>(ActivityMa
             viewModel.state
                 .filter { it.inProgress == true }
                 .distinctUntilChanged()
-                .collectLatest {
+                .collect {
                     binding.loading.visibility = View.VISIBLE
-                    binding.recyclerview.visibility = View.GONE
                 }
         }
 
@@ -81,10 +84,22 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>(ActivityMa
                 dividerItemDecoration.setDrawable(verticalDivider)
             }
             addItemDecoration(dividerItemDecoration)
-        }
 
-        binding.fab.setOnClickListener {
-            viewModel.deleteAllExceptFavorites()
+            addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    super.onScrolled(recyclerView, dx, dy)
+
+                    val layoutManager = recyclerView.layoutManager as LinearLayoutManager
+                    val totalItemCount = layoutManager.itemCount
+                    val lastVisibleItem = layoutManager.findLastVisibleItemPosition()
+
+                    if (totalItemCount <= lastVisibleItem + 5) {
+                        viewModel.isLoading()
+                        viewModel.page++
+                        viewModel.fetchPosts()
+                    }
+                }
+            })
         }
     }
 

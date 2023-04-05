@@ -25,7 +25,7 @@ import javax.inject.Singleton
 class ModuleInjector {
 
     companion object {
-        val baseUrl = "https://jsonplaceholder.typicode.com"
+        val baseUrl = "https://api.github.com/"
     }
 
     @Provides
@@ -36,11 +36,19 @@ class ModuleInjector {
     }
 
     @Provides
-    fun provideOkHttpClient(loggingInterceptor: HttpLoggingInterceptor
+    fun provideOkHttpClient(
+        loggingInterceptor: HttpLoggingInterceptor
     ): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(loggingInterceptor)
-            //.addInterceptor(KeyInterceptor(API_KEY, API_HOST))
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val requestBuilder = original.newBuilder()
+                   // .header("Authorization", "Bearer PLACE_YOUR_TOKEN")
+                    .method(original.method, original.body)
+                val request = requestBuilder.build()
+                chain.proceed(request)
+            }
             .build()
     }
 

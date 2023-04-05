@@ -1,7 +1,6 @@
 package com.example.testeapp.ui
 
 import com.example.testeapp.domain.PostsManager
-import com.example.testeapp.model.Post
 import io.mockk.*
 import io.mockk.impl.annotations.RelaxedMockK
 import kotlinx.coroutines.Dispatchers
@@ -14,15 +13,16 @@ import org.junit.Before
 import org.junit.Test
 import com.example.testeapp.model.Result
 import com.example.testeapp.model.Error
+import com.example.testeapp.model.PostWithUser
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MainViewModelTest{
+class MainViewModelTest {
 
     @RelaxedMockK
     private lateinit var postsManager: PostsManager
 
     @RelaxedMockK
-    private lateinit var mockPostList: List<Post>
+    private lateinit var mockPostList: List<PostWithUser>
 
     private lateinit var dispatcher: TestDispatcher
 
@@ -53,7 +53,7 @@ class MainViewModelTest{
         runTest {
 
             coEvery {
-                postsManager.getPosts()
+                postsManager.getPosts(1)
             } returns flow { emit(Result.success(mockPostList)) }
 
             MainViewModel = MainViewModel(postsManager)
@@ -84,7 +84,7 @@ class MainViewModelTest{
         runTest {
 
             coEvery {
-                postsManager.getPosts()
+                postsManager.getPosts(1)
             } returns flow { emit(Result.error("any message", Error(404, "any message"))) }
 
             MainViewModel = MainViewModel(postsManager)
@@ -115,7 +115,7 @@ class MainViewModelTest{
         runTest {
 
             coEvery {
-                postsManager.getPosts()
+                postsManager.getPosts(1)
             } returns flow { emit(Result.inProgress()) }
 
             MainViewModel = MainViewModel(postsManager)

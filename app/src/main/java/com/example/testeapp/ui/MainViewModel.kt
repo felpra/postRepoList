@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.testeapp.domain.PostsManager
 import com.example.testeapp.model.Post
+import com.example.testeapp.model.PostWithUser
 import com.example.testeapp.model.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ class MainViewModel @Inject constructor(private val postsManager: PostsManager) 
 
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
+    var page = 1
 
     init {
         fetchPosts()
@@ -25,11 +27,11 @@ class MainViewModel @Inject constructor(private val postsManager: PostsManager) 
 
     fun fetchPosts() {
         viewModelScope.launch {
-            postsManager.getPosts().collect { result ->
+            postsManager.getPosts(page).collect { result ->
                 when(result.status){
                     Result.Status.SUCCESS -> {
                         _state.update {
-                            it.copy(postList = result.data, inProgress = false)
+                            it.copy(postList = result.data as List<PostWithUser>, inProgress = false)
                         }
                     }
                     Result.Status.IN_PROGRESS -> {
@@ -47,15 +49,15 @@ class MainViewModel @Inject constructor(private val postsManager: PostsManager) 
         }
     }
 
-    fun update(post: Post) {
+    fun update(post: PostWithUser) {
         viewModelScope.launch {
             postsManager.updatePost(post)
         }
     }
 
-    fun deleteAllExceptFavorites() {
+    fun isLoading() {
         _state.update {
-            it.copy(postList = state.value.postList?.filter { it.isFavorite })
+            it.copy(inProgress = true)
         }
     }
 }
@@ -63,7 +65,7 @@ class MainViewModel @Inject constructor(private val postsManager: PostsManager) 
 
 
 data class UiState(
-    val postList: List<Post>? = null,
+    val postList: List<PostWithUser>? = null,
     val inProgress: Boolean? = null,
     val errorMessage: String? = null
 )
